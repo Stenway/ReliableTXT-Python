@@ -63,11 +63,10 @@ class ReliableTxtDocument:
 		return ReliableTxtEncoder.encode(self._text, self._encoding)
 	
 	def getCodePoints(self):
-		return list(map(lambda c: ord(c), self._text))
+		return StringUtil.getCodePoints(self._text)
 		
 	def setCodePoints(self, codePoints):
-		chars = list(map(lambda c: chr(c), codePoints))
-		self._text = "".join(chars)
+		self._text = StringUtil.fromCodePoints(codePoints)
 	
 	def save(self, filePath):
 		encodingName = self._encoding.value
@@ -82,4 +81,43 @@ class ReliableTxtDocument:
 			bytes = file.read()
 		encoding, text = ReliableTxtDecoder.decode(bytes)
 		return ReliableTxtDocument(text, encoding)
+
+
+class StringUtil:
+	def getCodePoints(str):
+		return list(map(lambda c: ord(c), str))
 	
+	def fromCodePoints(codePoints):
+		chars = list(map(lambda c: chr(c), codePoints))
+		return "".join(chars)
+
+
+class ReliableTxtCharIterator:
+	def __init__(self, text):
+		self._chars = StringUtil.getCodePoints(text)
+		self._index = 0
+	
+	def getLineInfo(self):
+		lineIndex = 0
+		linePosition = 0
+		for i in range(self._index):
+			if (self._chars[i] == 0x0A):
+				lineIndex += 1
+				linePosition = 0
+			else:
+				linePosition += 1
+		return lineIndex, linePosition
+		
+	def isEndOfText(self):
+		return self._index >= len(self._chars)
+	
+	def isChar(self, c):
+		if self.isEndOfText():
+			return False
+		return self._chars[self._index] == c
+		
+	def tryReadChar(self, c):
+		if not self.isChar(c):
+			return False
+		self._index += 1
+		return True
